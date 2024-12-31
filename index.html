@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <!-- 使用 meta viewport 以便在行動裝置上有良好體驗 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>TOEIC Vocabulary Master</title>
+    <style>
+        /* 全域基本樣式設定 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #3b82f6;
+            --success-color: #22c55e;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --background-color: #f8fafc;
+            --card-color: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--background-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        /* 容器樣式 */
+        .app-container {
+            background-color: var(--card-color);
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            width: 100%;
+            max-width: 800px;
+            padding: 32px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .header h1 {
+            color: var(--primary-color);
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+        .header p {
+            color: var(--text-secondary);
+        }
+
+        .mode-selector {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .mode-button {
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid var(--primary-color);
+            background: none;
+            color: var(--primary-color);
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .mode-button.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .stats-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background-color: var(--background-color);
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+            min-width: 120px;
+        }
+        .stat-card h3 {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-bottom: 8px;
+        }
+        .stat-card p {
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .word-card {
+            background-color: var(--background-color);
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 24px;
+            position: relative;
+            transition: transform 0.3s ease;
+            transform-style: preserve-3d;
+            cursor: pointer;
+            min-height: 250px;
+        }
+        .word-card.flipped {
+            transform: rotateY(180deg);
+        }
+        .word-front, .word-back {
+            backface-visibility: hidden;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: var(--background-color);
+            border-radius: 16px;
+        }
+        .word-back {
+            transform: rotateY(180deg);
+        }
+        .word {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            text-align: center;
+        }
+        .pronunciation {
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        .meaning {
+            font-size: 1.4rem;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        .example {
+            color: var(--text-secondary);
+            font-style: italic;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: white;
+        }
+        button:hover {
+            transform: translateY(-2px);
+        }
+        .btn-primary { background-color: var(--primary-color); }
+        .btn-secondary { background-color: var(--secondary-color); }
+        .btn-success { background-color: var(--success-color); }
+        .btn-warning { background-color: var(--warning-color); }
+        .btn-danger { background-color: var(--danger-color); }
+
+        .dictionary-fetch {
+            margin-bottom: 24px;
+            background-color: var(--background-color);
+            padding: 16px;
+            border-radius: 12px;
+        }
+        .dictionary-fetch label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+        }
+        .dictionary-fetch input {
+            width: 100%;
+            padding: 8px;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        .dictionary-fetch .hint {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-top: 4px;
+        }
+
+        /* 自訂功能區塊（增加/刪除單字） */
+        .custom-features {
+            background-color: var(--background-color);
+            padding: 16px;
+            border-radius: 12px;
+            margin-top: 24px;
+        }
+        .custom-features h2 {
+            color: var(--text-primary);
+            font-size: 1.2rem;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        .custom-features label {
+            display: block;
+            margin-bottom: 4px;
+            color: var(--text-secondary);
+        }
+        .custom-features input {
+            width: 100%;
+            padding: 8px;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        .custom-features .btn-block {
+            width: 100%;
+            margin: 8px 0;
+        }
+
+        /* 手機尺寸優化：字體加大、留白減少 */
+        @media (max-width: 480px) {
+            .word-card {
+                padding: 16px;
+                margin-bottom: 16px;
+                min-height: 200px;
+            }
+            .word-front, .word-back {
+                padding: 16px;
+            }
+            .word {
+                font-size: 2.2rem;
+            }
+            .pronunciation {
+                font-size: 1.4rem;
+                margin-bottom: 12px;
+            }
+            .meaning {
+                font-size: 1.6rem;
+                margin-bottom: 12px;
+            }
+            .example {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="header">
+            <h1>TOEIC Vocabulary Master</h1>
+            <p>Master TOEIC vocabulary with smart learning mode</p>
+        </div>
+
+        <!-- 模式切換 -->
+        <div class="mode-selector">
+            <button class="mode-button active" id="learningMode">Learning Mode</button>
+            <button class="mode-button" id="reviewMode">Review Mode</button>
+        </div>
+
+        <!-- 統計資訊 -->
+        <div class="stats-container">
+            <div class="stat-card">
+                <h3>Total Words</h3>
+                <p id="totalWords">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>Mastered</h3>
+                <p id="masteredWords">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>To Learn</h3>
+                <p id="toLearnWords">0</p>
+            </div>
+        </div>
+
+        <!-- 單字卡片 -->
+        <div class="word-card" id="wordCard">
+            <div class="word-front">
+                <div class="word" id="currentWord">Loading...</div>
+                <div class="pronunciation" id="pronunciation"></div>
+            </div>
+            <div class="word-back">
+                <div class="meaning" id="meaning"></div>
+                <div class="example" id="example"></div>
+            </div>
+        </div>
+
+        <!-- 操作按鈕列 -->
+        <div class="controls">
+            <button class="btn-primary" id="prevBtn">Previous</button>
+            <button class="btn-secondary" id="nextBtn">Next</button>
+            <button class="btn-warning" id="speakBtn">Speak</button>
+            <button class="btn-success" id="knownBtn">Mastered</button>
+            <button class="btn-danger" id="resetBtn">Reset</button>
+        </div>
+
+        <!-- 查詢並加入新單字 (dictionaryapi.dev) -->
+        <div class="dictionary-fetch">
+            <label for="lookupWord">Add new word from dictionary:</label>
+            <input type="text" id="lookupWord" placeholder="Type an English word..." />
+            <button class="btn-primary" id="fetchDefinitionBtn">Look up & Add</button>
+            <div class="hint">Using dictionaryapi.dev for definitions</div>
+        </div>
+
+        <!-- 自訂功能區：自訂單字 + 刪除單字 -->
+        <div class="custom-features">
+            <h2>自訂單字管理</h2>
+            <!-- 新增自訂單字 -->
+            <div class="add-custom-word">
+                <label for="customWord">單字（必填）</label>
+                <input type="text" id="customWord" placeholder="e.g., synergy" />
+                
+                <label for="customMeaning">意思（選填）</label>
+                <input type="text" id="customMeaning" placeholder="e.g., 協同效應" />
+
+                <label for="customExample">例句（選填）</label>
+                <input type="text" id="customExample" placeholder="e.g., The synergy between the teams was remarkable." />
+
+                <button class="btn-primary btn-block" id="addCustomWordBtn">新增自訂單字</button>
+            </div>
+
+            <!-- 刪除單字 -->
+            <div class="delete-word">
+                <label for="deleteWord">想刪除的單字</label>
+                <input type="text" id="deleteWord" placeholder="e.g., synergy" />
+                <button class="btn-danger btn-block" id="deleteWordBtn">刪除單字</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 使用 Set + 陣列過濾的方式移除重複單字（不分大小寫）
+        function removeDuplicates(wordArray) {
+            const uniqueWords = [];
+            const seen = new Set();
+            for (const item of wordArray) {
+                const lowerCaseWord = item.word.toLowerCase();
+                if (!seen.has(lowerCaseWord)) {
+                    seen.add(lowerCaseWord);
+                    uniqueWords.push(item);
+                }
+            }
+            return uniqueWords;
+        }
+
+        // 預設單字清單
+        const defaultVocabularyList = [
+        {
+            word: "astute",
+            pronunciation: "/əˈstjuːt/",
+            meaning: "敏銳的、精明的",
+            example: "Her astute observations helped the team identify the problem quickly."
+        },
+        {
+            word: "contingency",
+            pronunciation: "/kənˈtɪndʒənsi/",
+            meaning: "應變方案、意外事件",
+            example: "We need to prepare a contingency plan in case of system failure."
+        },
+        {
+            word: "expedite",
+            pronunciation: "/ˈɛkspɪdaɪt/",
+            meaning: "加速、促進",
+            example: "The company is trying to expedite the delivery process to meet customer demands."
+        },
+        {
+            word: "liaison",
+            pronunciation: "/ˈliːeɪzɒn/",
+            meaning: "聯絡人、聯繫",
+            example: "She acts as a liaison between the management team and the employees."
+        },
+        {
+            word: "redress",
+            pronunciation: "/rɪˈdrɛs/",
+            meaning: "糾正、補償",
+            example: "The company offered a refund as a way to redress the customer's complaints."
+        },
+        {
+            word: "scrutinize",
+            pronunciation: "/ˈskruːtɪnaɪz/",
+            meaning: "仔細檢查、審視",
+            example: "The auditors will scrutinize the financial records for any discrepancies."
+        },
+        {
+            word: "succinct",
+            pronunciation: "/səkˈsɪŋkt/",
+            meaning: "簡潔的、言簡意賅的",
+            example: "The report was clear and succinct, covering all the key points."
+        },
+        {
+            word: "tenacity",
+            pronunciation: "/tɪˈnasɪti/",
+            meaning: "韌性、堅持不懈",
+            example: "Her tenacity in overcoming obstacles is truly inspiring."
+        },
+// 以下物件皆為多益 950 分以上常見且實用的進階單字
+
+{
+    // 單字 1
+    word: "facilitate",
+    pronunciation: "/fəˈsɪlɪteɪt/",
+    meaning: "促進、使便利",
+    example: "The new software will help facilitate communication between different departments."
+},
+{
+    // 單字 2
+    word: "proliferate",
+    pronunciation: "/prəˈlɪfəreɪt/",
+    meaning: "激增、迅速繁殖",
+    example: "Social media has allowed information to proliferate at a rapid pace."
+},
+{
+    // 單字 3
+    word: "relinquish",
+    pronunciation: "/rɪˈlɪŋkwɪʃ/",
+    meaning: "放棄、交出",
+    example: "He decided to relinquish his managerial position to pursue further studies."
+},
+{
+    // 單字 4
+    word: "vigilant",
+    pronunciation: "/ˈvɪdʒɪlənt/",
+    meaning: "警惕的、警醒的",
+    example: "The security team remained vigilant throughout the conference."
+},
+{
+    // 單字 5
+    word: "exorbitant",
+    pronunciation: "/ɪɡˈzɔːbɪtənt/",
+    meaning: "過高的、過度的",
+    example: "We decided against renting the venue because of the exorbitant fees."
+},
+{
+    // 單字 6
+    word: "cohesive",
+    pronunciation: "/kəʊˈhiːsɪv/",
+    meaning: "有凝聚力的、團結的",
+    example: "The new manager's leadership style turned the team into a cohesive unit."
+},
+{
+    // 單字 7
+    word: "imperative",
+    pronunciation: "/ɪmˈpɛrətɪv/",
+    meaning: "緊要的、必要的",
+    example: "It is imperative to finalize the contract by the end of this week."
+},
+{
+    // 單字 8
+    word: "abdicate",
+    pronunciation: "/ˈæbdɪkeɪt/",
+    meaning: "放棄(職責、權力)、退位",
+    example: "The CEO chose to abdicate his position for personal reasons."
+},
+{
+    // 單字 9
+    word: "juxtapose",
+    pronunciation: "/ˌdʒʌkstəˈpəʊz/",
+    meaning: "並列、並置",
+    example: "The designer juxtaposed modern and traditional elements in the new collection."
+},
+{
+    // 單字 10
+    word: "consensus",
+    pronunciation: "/kənˈsɛnsəs/",
+    meaning: "共識、一致意見",
+    example: "The board reached a consensus on the budget proposal after hours of discussion."
+},
+
+// 以下物件皆為多益 950 分以上常見且實用的進階單字
+
+        {
+            // 單字 1
+            word: "impeccable",
+            pronunciation: "/ɪmˈpɛkəbl/",
+            meaning: "無懈可擊的、完美的",
+            example: "Her presentation was impeccable, leaving no room for questions."
+        },
+        {
+            // 單字 2
+            word: "deviate",
+            pronunciation: "/ˈdiːvieɪt/",
+            meaning: "偏離、脫離",
+            example: "We should not deviate from our long-term goals even if challenges arise."
+        },
+        {
+            // 單字 3
+            word: "commence",
+            pronunciation: "/kəˈmɛns/",
+            meaning: "開始、著手",
+            example: "The new project is set to commence next Monday."
+        },
+        {
+            // 單字 4
+            word: "repudiate",
+            pronunciation: "/rɪˈpjuːdieɪt/",
+            meaning: "否認、拒絕",
+            example: "The manager chose to repudiate the allegations made against the company."
+        },
+        {
+            // 單字 5
+            word: "exacerbate",
+            pronunciation: "/ɪɡˈzæsərbeɪt/",
+            meaning: "使惡化、加劇",
+            example: "Delaying the solution will only exacerbate the problem."
+        },
+        {
+            // 單字 6
+            word: "feasible",
+            pronunciation: "/ˈfiːzəbl/",
+            meaning: "可行的、行得通的",
+            example: "The team is evaluating whether the plan is financially feasible."
+        },
+        {
+            // 單字 7
+            word: "hamper",
+            pronunciation: "/ˈhæmpər/",
+            meaning: "阻礙、妨礙",
+            example: "Bad weather could hamper construction progress."
+        },
+        {
+            // 單字 8
+            word: "rectify",
+            pronunciation: "/ˈrɛktɪfaɪ/",
+            meaning: "矯正、修正",
+            example: "The company took immediate steps to rectify the accounting errors."
+        },
+        {
+            // 單字 9
+            word: "circumvent",
+            pronunciation: "/ˌsɜːrkəmˈvɛnt/",
+            meaning: "規避、迴避",
+            example: "They tried to circumvent the new policy through a loophole."
+        },
+        {
+            // 單字 10
+            word: "acclaim",
+            pronunciation: "/əˈkleɪm/",
+            meaning: "稱讚、讚譽",
+            example: "Her innovative marketing campaign received widespread acclaim."
+        },
+        ];
+
+        // 從 localStorage 中讀取已儲存的單字，如果沒有就給空陣列
+        let vocabularyData = JSON.parse(localStorage.getItem('vocabularyData')) || [];
+
+        // 如果尚未初始化，將預設單字合併並去重後存入
+        if (!localStorage.getItem('initialized')) {
+            vocabularyData = removeDuplicates([...defaultVocabularyList, ...vocabularyData]);
+            localStorage.setItem('vocabularyData', JSON.stringify(vocabularyData));
+            localStorage.setItem('initialized', 'true');
+        } else {
+            // 若已初始化，確保再次載入時也去重（防止後續重複）
+            vocabularyData = removeDuplicates(vocabularyData);
+            localStorage.setItem('vocabularyData', JSON.stringify(vocabularyData));
+        }
+
+        // 讀取「已掌握」單字的清單
+        let masteredWords = new Set(JSON.parse(localStorage.getItem('masteredWords') || '[]'));
+
+        // 其他狀態
+        let currentIndex = 0;        // 目前單字索引
+        let isLearningMode = true;   // 預設為學習模式(learning)
+
+        // 取得 DOM 元素
+        const elements = {
+            wordCard: document.getElementById('wordCard'),
+            currentWord: document.getElementById('currentWord'),
+            pronunciation: document.getElementById('pronunciation'),
+            meaning: document.getElementById('meaning'),
+            example: document.getElementById('example'),
+            totalWords: document.getElementById('totalWords'),
+            masteredWords: document.getElementById('masteredWords'),
+            toLearnWords: document.getElementById('toLearnWords'),
+            learningMode: document.getElementById('learningMode'),
+            reviewMode: document.getElementById('reviewMode')
+        };
+
+        // 更新統計數字
+        function updateStats() {
+            elements.totalWords.textContent = vocabularyData.length;
+            elements.masteredWords.textContent = masteredWords.size;
+            elements.toLearnWords.textContent = vocabularyData.length - masteredWords.size;
+        }
+
+        // 根據目前模式回傳顯示的單字陣列
+        function getCurrentWordList() {
+            if (isLearningMode) {
+                // 學習模式：只顯示尚未掌握的單字
+                return vocabularyData.filter(word => !masteredWords.has(word.word));
+            } else {
+                // 複習模式：只顯示已掌握的單字
+                return vocabularyData.filter(word => masteredWords.has(word.word));
+            }
+        }
+
+        // 顯示當前索引的單字
+        function showWord(index) {
+            const currentList = getCurrentWordList();
+
+            if (currentList.length === 0) {
+                // 沒有單字可顯示時，顯示提示文字
+                elements.currentWord.textContent = isLearningMode
+                    ? "All words mastered!"
+                    : "No words mastered yet";
+                elements.pronunciation.textContent = "";
+                elements.meaning.textContent = "";
+                elements.example.textContent = "";
+                return;
+            }
+
+            // 有單字可顯示時
+            const wordObj = currentList[index];
+            elements.currentWord.textContent = wordObj.word;
+            elements.pronunciation.textContent = wordObj.pronunciation || "";
+            elements.meaning.textContent = wordObj.meaning || "";
+            elements.example.textContent = wordObj.example || "";
+        }
+
+        // 切換學習模式 / 複習模式
+        function switchMode(mode) {
+            isLearningMode = (mode === 'learning');
+            elements.learningMode.classList.toggle('active', isLearningMode);
+            elements.reviewMode.classList.toggle('active', !isLearningMode);
+            currentIndex = 0;
+            showWord(currentIndex);
+        }
+
+        // 文字轉語音
+        function speakContent(text) {
+            window.speechSynthesis.cancel();
+            if (!text || text.trim() === "") return;
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            utterance.rate = 0.8;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // 更新狀態並顯示第一個單字
+        updateStats();
+        showWord(currentIndex);
+
+        // 學習模式按鈕事件
+        elements.learningMode.addEventListener('click', () => switchMode('learning'));
+
+        // 複習模式按鈕事件
+        elements.reviewMode.addEventListener('click', () => switchMode('review'));
+
+        // 卡片點擊事件（翻轉卡片＋發音）
+        elements.wordCard.addEventListener('click', () => {
+            elements.wordCard.classList.toggle('flipped');
+
+            const currentList = getCurrentWordList();
+            if (currentList.length === 0) return;
+
+            const wordObj = currentList[currentIndex];
+
+            // 若翻轉後（背面），只念背面內容（例句），若有的話
+            if (elements.wordCard.classList.contains('flipped')) {
+                speakContent(wordObj.example);
+            } else {
+                // 翻轉回正面時，只念單字
+                speakContent(wordObj.word);
+            }
+        });
+
+        // Previous 按鈕
+        document.getElementById('prevBtn').addEventListener('click', () => {
+            window.speechSynthesis.cancel();
+            const currentList = getCurrentWordList();
+            if (currentList.length === 0) return;
+            currentIndex = (currentIndex - 1 + currentList.length) % currentList.length;
+            showWord(currentIndex);
+            // 翻轉狀態重置回正面
+            elements.wordCard.classList.remove('flipped');
+        });
+
+        // Next 按鈕
+        document.getElementById('nextBtn').addEventListener('click', () => {
+            window.speechSynthesis.cancel();
+            const currentList = getCurrentWordList();
+            if (currentList.length === 0) return;
+            currentIndex = (currentIndex + 1) % currentList.length;
+            showWord(currentIndex);
+            // 翻轉狀態重置回正面
+            elements.wordCard.classList.remove('flipped');
+        });
+
+        // Speak 按鈕：只念目前「可見面」上的內容
+        document.getElementById('speakBtn').addEventListener('click', () => {
+            const currentList = getCurrentWordList();
+            if (currentList.length === 0) return;
+
+            const wordObj = currentList[currentIndex];
+            // 如果卡片是正面，念單字；若是背面，念例句
+            if (elements.wordCard.classList.contains('flipped')) {
+                speakContent(wordObj.example);
+            } else {
+                speakContent(wordObj.word);
+            }
+        });
+
+        // 標記/取消單字「已掌握」按鈕
+        document.getElementById('knownBtn').addEventListener('click', () => {
+            const currentList = getCurrentWordList();
+            if (currentList.length === 0) return;
+
+            const wordObj = currentList[currentIndex];
+            if (masteredWords.has(wordObj.word)) {
+                masteredWords.delete(wordObj.word);
+            } else {
+                masteredWords.add(wordObj.word);
+            }
+            localStorage.setItem('masteredWords', JSON.stringify([...masteredWords]));
+            updateStats();
+
+            // 重新調整 currentIndex
+            if (currentList.length <= 1) {
+                currentIndex = 0;
+            } else {
+                currentIndex = currentIndex % (currentList.length - 1);
+            }
+            showWord(currentIndex);
+            // 翻轉狀態重置回正面
+            elements.wordCard.classList.remove('flipped');
+        });
+
+        // Reset 按鈕：重置所有進度與單字庫
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            if (confirm('確定要重置所有進度和單字庫嗎？')) {
+                localStorage.removeItem('vocabularyData');
+                localStorage.removeItem('masteredWords');
+                localStorage.removeItem('initialized');
+                window.location.reload();
+            }
+        });
+
+        // 從 dictionaryapi.dev 取資料並加入新單字
+        document.getElementById('fetchDefinitionBtn').addEventListener('click', () => {
+            const queryWord = document.getElementById('lookupWord').value.trim().toLowerCase();
+            if (!queryWord) {
+                alert('請輸入要查詢的英文字');
+                return;
+            }
+
+            // 開始查詢
+            fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${queryWord}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && Array.isArray(data) && data[0]) {
+                        const wordInfo = data[0];
+
+                        // 檢查是否已在單字庫
+                        if (vocabularyData.some(item => item.word.toLowerCase() === queryWord)) {
+                            alert('此單字已在您的單字庫中！');
+                            return;
+                        }
+
+                        // 嘗試取得音標
+                        let phonetic = wordInfo.phonetic || "";
+                        if (!phonetic && wordInfo.phonetics && wordInfo.phonetics.length > 0) {
+                            phonetic = wordInfo.phonetics[0].text || "";
+                        }
+
+                        // 嘗試取得解釋與例句
+                        let definition = "";
+                        let example = "";
+                        if (wordInfo.meanings && wordInfo.meanings.length > 0) {
+                            const firstMeaning = wordInfo.meanings[0];
+                            if (firstMeaning.definitions && firstMeaning.definitions.length > 0) {
+                                definition = firstMeaning.definitions[0].definition || "";
+                                example = firstMeaning.definitions[0].example || "";
+                            }
+                        }
+
+                        // 新單字物件
+                        const newWord = {
+                            word: wordInfo.word,
+                            pronunciation: phonetic,
+                            meaning: definition,
+                            example: example
+                        };
+
+                        // 存進陣列並去重
+                        vocabularyData.push(newWord);
+                        vocabularyData = removeDuplicates(vocabularyData);
+                        localStorage.setItem('vocabularyData', JSON.stringify(vocabularyData));
+
+                        // 清空輸入框
+                        document.getElementById('lookupWord').value = '';
+
+                        // 更新統計與目前顯示
+                        updateStats();
+
+                        // 若目前在學習模式，直接切到最後一筆（新加入的）
+                        if (isLearningMode) {
+                            const learningList = getCurrentWordList();
+                            currentIndex = learningList.length - 1;
+                            showWord(currentIndex);
+                        }
+
+                        alert(`成功加入新單字：${newWord.word}`);
+                    } else {
+                        alert('找不到此單字，請確認拼字是否正確。');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('查詢過程發生錯誤，請稍後再試。');
+                });
+        });
+
+        // 新增「自訂單字」功能（不需輸入發音）
+        document.getElementById('addCustomWordBtn').addEventListener('click', () => {
+            const customWord = document.getElementById('customWord').value.trim();
+            const customMeaning = document.getElementById('customMeaning').value.trim();
+            const customExample = document.getElementById('customExample').value.trim();
+
+            if (!customWord) {
+                alert('請輸入單字 (必填)');
+                return;
+            }
+
+            // 檢查是否已在單字庫（忽略大小寫）
+            if (vocabularyData.some(item => item.word.toLowerCase() === customWord.toLowerCase())) {
+                alert('此單字已在您的單字庫中！');
+                return;
+            }
+
+            // 準備要加入的新單字物件（發音留空字串）
+            const newWord = {
+                word: customWord,
+                pronunciation: "",
+                meaning: customMeaning,
+                example: customExample
+            };
+
+            vocabularyData.push(newWord);
+            vocabularyData = removeDuplicates(vocabularyData);
+            localStorage.setItem('vocabularyData', JSON.stringify(vocabularyData));
+
+            // 清空輸入欄位
+            document.getElementById('customWord').value = '';
+            document.getElementById('customMeaning').value = '';
+            document.getElementById('customExample').value = '';
+
+            // 更新介面
+            updateStats();
+            if (isLearningMode) {
+                const learningList = getCurrentWordList();
+                currentIndex = learningList.length - 1;
+                showWord(currentIndex);
+            }
+
+            alert(`成功加入自訂單字：${newWord.word}`);
+        });
+
+        // 刪除單字功能
+        document.getElementById('deleteWordBtn').addEventListener('click', () => {
+            const wordToDelete = document.getElementById('deleteWord').value.trim().toLowerCase();
+            if (!wordToDelete) {
+                alert('請輸入要刪除的單字');
+                return;
+            }
+
+            // 找到該單字在 vocabularyData 的索引
+            const index = vocabularyData.findIndex(item => item.word.toLowerCase() === wordToDelete);
+            if (index === -1) {
+                alert('字庫中找不到此單字，請確認拼字');
+                return;
+            }
+
+            // 若該單字已在 masteredWords 也要一併移除
+            const originalWord = vocabularyData[index].word;
+            if (masteredWords.has(originalWord)) {
+                masteredWords.delete(originalWord);
+                localStorage.setItem('masteredWords', JSON.stringify([...masteredWords]));
+            }
+
+            // 從 vocabularyData 中移除
+            vocabularyData.splice(index, 1);
+            localStorage.setItem('vocabularyData', JSON.stringify(vocabularyData));
+
+            // 清空輸入欄位
+            document.getElementById('deleteWord').value = '';
+
+            // 若目前顯示的單字剛好是被刪除的單字，重新顯示
+            const currentList = getCurrentWordList();
+            if (currentList.length === 0) {
+                currentIndex = 0;
+            } else {
+                currentIndex = currentIndex % currentList.length;
+            }
+
+            // 更新介面
+            updateStats();
+            showWord(currentIndex);
+            elements.wordCard.classList.remove('flipped');
+
+            alert(`單字「${originalWord}」已成功刪除！`);
+        });
+    </script>
+</body>
+</html>
